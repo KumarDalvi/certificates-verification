@@ -4,10 +4,9 @@
   <meta charset="UTF-8">
   <title>Certificate Verification</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Roboto', sans-serif;
@@ -28,21 +27,9 @@
       text-align: center;
       transition: transform 0.2s;
     }
-    .card:hover {
-      transform: translateY(-5px);
-    }
-    h2 {
-      margin: 0 0 15px 0;
-      font-size: 28px;
-      color: #333;
-    }
-    p#status {
-      font-size: 18px;
-      color: #555;
-      margin: 10px 0 20px 0;
-      line-height: 1.4;
-      white-space: pre-line;
-    }
+    .card:hover { transform: translateY(-5px); }
+    h2 { margin: 0 0 15px 0; font-size: 28px; color: #333; }
+    p#status { font-size: 18px; color: #555; margin: 10px 0 20px 0; line-height: 1.4; white-space: pre-line; }
     .buttons {
       display: flex;
       justify-content: center;
@@ -60,30 +47,12 @@
       transition: background 0.3s, transform 0.2s;
       min-width: 120px;
     }
-    a#openBtn {
-      background: #4caf50;
-      color: white;
-    }
-    a#downloadBtn {
-      background: #2196f3;
-      color: white;
-    }
-    button {
-      background: #ff9800;
-      color: white;
-    }
-    a:hover, button:hover {
-      opacity: 0.9;
-      transform: translateY(-2px);
-    }
-    iframe {
-      width: 100%;
-      height: 500px;
-      border: none;
-      border-radius: 15px;
-      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-    }
+    a#openBtn { background: #4caf50; color: white; }
+    a#downloadBtn { background: #2196f3; color: white; }
+    button { background: #ff9800; color: white; }
+    a:hover, button:hover { opacity: 0.9; transform: translateY(-2px); }
+    #pdfContainer { margin-bottom: 20px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+    canvas { width: 100%; border-radius: 15px; }
     .not-valid {
       color: #e53935;
       font-weight: 700;
@@ -94,27 +63,12 @@
       justify-content: center;
       gap: 10px;
     }
-    .not-valid svg {
-      width: 60px;
-      height: 60px;
-    }
+    .not-valid svg { width: 60px; height: 60px; }
     @media (max-width: 768px) {
-      .card {
-        padding: 20px;
-      }
-      h2 {
-        font-size: 24px;
-      }
-      p#status {
-        font-size: 16px;
-      }
-      button, a {
-        min-width: 100px;
-        padding: 10px 15px;
-      }
-      iframe {
-        height: 350px;
-      }
+      .card { padding: 20px; }
+      h2 { font-size: 24px; }
+      p#status { font-size: 16px; }
+      button, a { min-width: 100px; padding: 10px 15px; }
     }
   </style>
 </head>
@@ -129,67 +83,90 @@
       <button onclick="copyLink()">Copy Link</button>
     </div>
 
-    <iframe id="pdfViewer" style="display:none;"></iframe>
+    <div id="pdfContainer"></div>
 
-    <p style="font-size: 12px; color:#777; margin-top:10px;">This certificate is authentic if you scanned the official QR/link provided by the issuer.</p>
+    <p style="font-size: 12px; color:#777; margin-top:10px;">
+      This certificate is authentic if you scanned the official QR/link provided by the issuer.
+    </p>
   </div>
 
 <script>
-  const urlParams = new URLSearchParams(window.location.search);
-  const file = urlParams.get("file");
+const urlParams = new URLSearchParams(window.location.search);
+const file = urlParams.get("file");
 
-  function copyLink() {
-    navigator.clipboard.writeText(window.location.href);
-    alert("Link copied to clipboard!");
-  }
+function copyLink() {
+  navigator.clipboard.writeText(window.location.href);
+  alert("Link copied to clipboard!");
+}
 
-  if (file) {
-    let filename = file.split("/").pop();
-    let name = filename.replace(/_/g, " ")
-                       .replace(/\.pdf$/i, "")
-                       .replace(/\bCertificate\b/i, "")
-                       .trim();
+// PDF.js rendering function
+function renderPDF(url) {
+  const container = document.getElementById('pdfContainer');
+  container.innerHTML = ''; // clear previous canvas
+  const loadingTask = pdfjsLib.getDocument(url);
+  loadingTask.promise.then(pdf => {
+    pdf.getPage(1).then(page => {
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = document.createElement('canvas');
+      container.appendChild(canvas);
+      const context = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      page.render({ canvasContext: context, viewport: viewport });
+    });
+  }).catch(err => {
+    container.innerHTML = `<p class="not-valid">Error rendering PDF</p>`;
+  });
+}
 
-    fetch(file, { method: 'HEAD' })
-      .then(res => {
-        if (res.ok) {
-          document.getElementById("status").innerText = `✅ Certificate is valid\nName: ${name}`;
-          document.getElementById("actions").style.display = "flex";
-          document.getElementById("pdfViewer").style.display = "block";
-          document.getElementById("pdfViewer").src = file;
-          document.getElementById("openBtn").href = file;
-          document.getElementById("downloadBtn").href = file;
-        } else {
-          document.getElementById("status").innerHTML = `
-            <div class="not-valid">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-              ❌ Certificate not valid<br>File not found
-            </div>
-          `;
-        }
-      })
-      .catch(err => {
+if(file){
+  let filename = file.split("/").pop();
+  let name = filename.replace(/_/g, " ")
+                     .replace(/\.pdf$/i, "")
+                     .replace(/\bCertificate\b/i, "")
+                     .trim();
+
+  // Check if file exists
+  fetch(file, { method: 'HEAD' })
+    .then(res => {
+      if(res.ok){
+        document.getElementById("status").innerText = `✅ Certificate is valid\nName: ${name}`;
+        document.getElementById("actions").style.display = "flex";
+        document.getElementById("openBtn").href = file;
+        document.getElementById("downloadBtn").href = file;
+        renderPDF(file);
+      } else {
         document.getElementById("status").innerHTML = `
           <div class="not-valid">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
-            ❌ Certificate not valid<br>Error accessing file
+            ❌ Certificate not valid<br>File not found
           </div>
         `;
-      });
-  } else {
-    document.getElementById("status").innerHTML = `
-      <div class="not-valid">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-        ❌ Invalid certificate link
-      </div>
-    `;
-  }
+      }
+    })
+    .catch(err => {
+      document.getElementById("status").innerHTML = `
+        <div class="not-valid">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          ❌ Certificate not valid<br>Error accessing file
+        </div>
+      `;
+    });
+
+}else{
+  document.getElementById("status").innerHTML = `
+    <div class="not-valid">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+      ❌ Invalid certificate link
+    </div>
+  `;
+}
 </script>
 </body>
 </html>
