@@ -3,47 +3,118 @@
 <head>
   <meta charset="UTF-8">
   <title>Certificate Verification</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      padding: 20px;
-      text-align: center;
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 15px;
     }
     .card {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 12px 25px rgba(0,0,0,0.15);
       max-width: 700px;
-      margin: auto;
+      width: 100%;
+      padding: 30px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    h2 {
+      margin: 0 0 15px 0;
+      font-size: 28px;
+      color: #333;
+    }
+    p#status {
+      font-size: 18px;
+      color: #555;
+      margin: 10px 0 20px 0;
+      line-height: 1.4;
+      white-space: pre-line;
     }
     .buttons {
-      margin: 15px 0;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
     }
     button, a {
-      padding: 10px 16px;
-      margin: 5px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #007bff;
-      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
       text-decoration: none;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+      min-width: 120px;
     }
-    button:hover, a:hover {
-      background: #0056b3;
+    a#openBtn {
+      background: #4caf50;
+      color: white;
+    }
+    a#downloadBtn {
+      background: #2196f3;
+      color: white;
+    }
+    button {
+      background: #ff9800;
+      color: white;
+    }
+    a:hover, button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
     }
     iframe {
       width: 100%;
       height: 500px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
     }
     .not-valid {
-      color: red;
-      font-size: 18px;
-      font-weight: bold;
+      color: #e53935;
+      font-weight: 700;
+      font-size: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .not-valid svg {
+      width: 60px;
+      height: 60px;
+    }
+    @media (max-width: 768px) {
+      .card {
+        padding: 20px;
+      }
+      h2 {
+        font-size: 24px;
+      }
+      p#status {
+        font-size: 16px;
+      }
+      button, a {
+        min-width: 100px;
+        padding: 10px 15px;
+      }
+      iframe {
+        height: 350px;
+      }
     }
   </style>
 </head>
@@ -59,7 +130,8 @@
     </div>
 
     <iframe id="pdfViewer" style="display:none;"></iframe>
-    <p style="font-size: 12px; margin-top: 10px;">This certificate is authentic if you scanned the official QR/link provided by the issuer.</p>
+
+    <p style="font-size: 12px; color:#777; margin-top:10px;">This certificate is authentic if you scanned the official QR/link provided by the issuer.</p>
   </div>
 
 <script>
@@ -72,35 +144,51 @@
   }
 
   if (file) {
-    // Generate clean name from filename
     let filename = file.split("/").pop();
     let name = filename.replace(/_/g, " ")
                        .replace(/\.pdf$/i, "")
                        .replace(/\bCertificate\b/i, "")
                        .trim();
 
-    // Check if file exists using fetch
     fetch(file, { method: 'HEAD' })
       .then(res => {
         if (res.ok) {
-          // File exists
           document.getElementById("status").innerText = `✅ Certificate is valid\nName: ${name}`;
-          document.getElementById("actions").style.display = "block";
+          document.getElementById("actions").style.display = "flex";
           document.getElementById("pdfViewer").style.display = "block";
           document.getElementById("pdfViewer").src = file;
           document.getElementById("openBtn").href = file;
           document.getElementById("downloadBtn").href = file;
         } else {
-          // File does not exist
-          document.getElementById("status").innerHTML = `❌ Certificate not valid <br><span class="not-valid">File not found</span>`;
+          document.getElementById("status").innerHTML = `
+            <div class="not-valid">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              ❌ Certificate not valid<br>File not found
+            </div>
+          `;
         }
       })
       .catch(err => {
-        document.getElementById("status").innerHTML = `❌ Certificate not valid <br><span class="not-valid">Error accessing file</span>`;
+        document.getElementById("status").innerHTML = `
+          <div class="not-valid">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            ❌ Certificate not valid<br>Error accessing file
+          </div>
+        `;
       });
-
   } else {
-    document.getElementById("status").innerHTML = "❌ Invalid certificate link";
+    document.getElementById("status").innerHTML = `
+      <div class="not-valid">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        ❌ Invalid certificate link
+      </div>
+    `;
   }
 </script>
 </body>
