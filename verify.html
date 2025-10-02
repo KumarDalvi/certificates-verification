@@ -61,21 +61,25 @@
   // Get query parameters
   const urlParams = new URLSearchParams(window.location.search);
   const file = urlParams.get("file");
-  const name = urlParams.get("name");
 
-  if (file && name) {
-    const pdfPath = file;
-    document.getElementById("status").innerText = 
-      `Certificate is valid ✅\nName: ${name}`;
+  if (file) {
+    // Generate clean name from filename
+    let filename = file.split("/").pop(); // Get only file name
+    let name = filename.replace(/_/g, " ")   // Replace underscores with space
+                       .replace(/\.pdf$/i, "") // Remove .pdf
+                       .replace(/\bCertificate\b/i, "") // Remove 'Certificate' if exists
+                       .trim(); // Remove extra spaces
+
+    document.getElementById("status").innerText = `Certificate is valid ✅\nName: ${name}`;
 
     document.getElementById("actions").style.display = "block";
 
     // Set Open & Download links
-    document.getElementById("openBtn").href = pdfPath;
-    document.getElementById("downloadBtn").href = pdfPath;
+    document.getElementById("openBtn").href = file;
+    document.getElementById("downloadBtn").href = file;
 
     // Show PDF preview
-    document.getElementById("pdfViewer").src = pdfPath;
+    document.getElementById("pdfViewer").src = file;
   } else {
     document.getElementById("status").innerText = "❌ Invalid certificate link";
   }
