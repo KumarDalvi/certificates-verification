@@ -40,11 +40,16 @@
       border: 1px solid #ddd;
       border-radius: 8px;
     }
+    .not-valid {
+      color: red;
+      font-size: 18px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <div class="card">
-    <h2>✅ Certificate Verification</h2>
+    <h2>Certificate Verification</h2>
     <p id="status">Checking certificate...</p>
 
     <div class="buttons" id="actions" style="display:none;">
@@ -53,40 +58,49 @@
       <button onclick="copyLink()">Copy Link</button>
     </div>
 
-    <iframe id="pdfViewer"></iframe>
+    <iframe id="pdfViewer" style="display:none;"></iframe>
     <p style="font-size: 12px; margin-top: 10px;">This certificate is authentic if you scanned the official QR/link provided by the issuer.</p>
   </div>
 
 <script>
-  // Get query parameters
   const urlParams = new URLSearchParams(window.location.search);
   const file = urlParams.get("file");
-
-  if (file) {
-    // Generate clean name from filename
-    let filename = file.split("/").pop(); // Get only file name
-    let name = filename.replace(/_/g, " ")   // Replace underscores with space
-                       .replace(/\.pdf$/i, "") // Remove .pdf
-                       .replace(/\bCertificate\b/i, "") // Remove 'Certificate' if exists
-                       .trim(); // Remove extra spaces
-
-    document.getElementById("status").innerText = `Certificate is valid ✅\nName: ${name}`;
-
-    document.getElementById("actions").style.display = "block";
-
-    // Set Open & Download links
-    document.getElementById("openBtn").href = file;
-    document.getElementById("downloadBtn").href = file;
-
-    // Show PDF preview
-    document.getElementById("pdfViewer").src = file;
-  } else {
-    document.getElementById("status").innerText = "❌ Invalid certificate link";
-  }
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.href);
     alert("Link copied to clipboard!");
+  }
+
+  if (file) {
+    // Generate clean name from filename
+    let filename = file.split("/").pop();
+    let name = filename.replace(/_/g, " ")
+                       .replace(/\.pdf$/i, "")
+                       .replace(/\bCertificate\b/i, "")
+                       .trim();
+
+    // Check if file exists using fetch
+    fetch(file, { method: 'HEAD' })
+      .then(res => {
+        if (res.ok) {
+          // File exists
+          document.getElementById("status").innerText = `✅ Certificate is valid\nName: ${name}`;
+          document.getElementById("actions").style.display = "block";
+          document.getElementById("pdfViewer").style.display = "block";
+          document.getElementById("pdfViewer").src = file;
+          document.getElementById("openBtn").href = file;
+          document.getElementById("downloadBtn").href = file;
+        } else {
+          // File does not exist
+          document.getElementById("status").innerHTML = `❌ Certificate not valid <br><span class="not-valid">File not found</span>`;
+        }
+      })
+      .catch(err => {
+        document.getElementById("status").innerHTML = `❌ Certificate not valid <br><span class="not-valid">Error accessing file</span>`;
+      });
+
+  } else {
+    document.getElementById("status").innerHTML = "❌ Invalid certificate link";
   }
 </script>
 </body>
